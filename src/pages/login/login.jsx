@@ -7,7 +7,8 @@ import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import {reqLogin} from '../../api/'
 import {message} from 'antd'
 import memoryUtils from '../../utils/memoryUtils'
-
+import storageUtils from '../../utils/storageUtils'
+import { Redirect } from 'react-router-dom'
 /*
 登陆的路由组件
 */
@@ -30,12 +31,13 @@ class Login extends Component{
       message.success("登陆成功")
       // 保存user
       const user = result.data
-      memoryUtils.user = user
+      memoryUtils.user = user  //保存在内存中
+
+      storageUtils.saveUser(user)  //保存在local中
 
       //跳转到后台管理界面(用replace是因为不希望回退，希望回退用push)
       this.props.history.replace("/")
     }else{
-
       // 登陆失败
       message.error(result.msg)
     }
@@ -62,6 +64,12 @@ class Login extends Component{
     // callback（'xxx')  验证失败，并指定提示的文本
   }
   render (){
+    // 如果用户已经登陆，自动跳转到管理界面
+    const user = memoryUtils.user
+    if(user && user._id){
+      return <Redirect to='/'></Redirect>
+
+    }
     return (
       <div className="login">
         <header className="login-header">
