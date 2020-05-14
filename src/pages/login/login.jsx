@@ -4,14 +4,43 @@ import './login.less'
 import logo from './images/logo.png'
 import { Form, Input, Button } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
+import {reqLogin} from '../../api/'
+import {message} from 'antd'
+import memoryUtils from '../../utils/memoryUtils'
+
 /*
 登陆的路由组件
 */
 class Login extends Component{
 
-  onFinish = (values)=>{
-    console.log('Received values of form: ', values);
-  }
+  onFinish = (async (values) => {
+    const {username, password} = values
+    // reqLogin(username, password).then(response=>{
+    //   console.log(response)
+    //   console.log('成功', response.data)
+    // }).catch(error=>{
+    //   console.log('失败',error)
+    // })
+
+    const result = await reqLogin(username, password)
+    // console.log("请求成功",response.data)
+    if(result.status===0){
+
+      // 登陆成功
+      message.success("登陆成功")
+      // 保存user
+      const user = result.data
+      memoryUtils.user = user
+
+      //跳转到后台管理界面(用replace是因为不希望回退，希望回退用push)
+      this.props.history.replace("/")
+    }else{
+
+      // 登陆失败
+      message.error(result.msg)
+    }
+
+  })
   /*
   对密码进行自定义验证
   */
@@ -57,7 +86,7 @@ class Login extends Component{
                 { min: 4, message:'用户名至少四位'},
                 { max: 12, message: '用户名最多12位'},
                 { pattern: /^[a-zA-Z0-9_]+$/, message: '用户名必须是英文、数字或下划线组成'}
-            ]}
+            ]}              
             >
               <Input prefix={<UserOutlined className="site-form-item-icon" />} placeholder="用户名" />
             </Form.Item>
@@ -103,4 +132,16 @@ export default Login
   1）本质就是一个函数
   2）接收一个组件（被包装组件），返回一个新的组件（包装组件），包装组件会向被包装组件传入特定属性
   3）扩展组件的功能
+ */
+
+
+ /*
+async 和 await
+1. 作用
+简化promise对象的使用：不用在使用then()来指定成功/失败的回掉函数
+以同步编码（没有回掉函数了）方式实现异步流程
+2. 哪里写await
+在返回promise的表达式的左侧写await：不想要promise，想要promise异步执行的成功的value数据
+3. 哪里写async
+await所在函数（最近的）定义的左侧写async
  */

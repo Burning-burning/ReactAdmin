@@ -1,12 +1,23 @@
 import React, { Component } from 'react'
+import memoryUtils from '../../utils/memoryUtils'
+import { Redirect } from 'react-router-dom'
 /*
 后台管理的路由组件
 */
 export default class Admin extends Component {
+
   render() {
+    const user = memoryUtils.user
+    //如果内存中没有存储user==》当前没有登陆
+    if(!user ||!user._id){
+
+      // 自动跳转到登陆（在render中）
+      return <Redirect to ='/login' />
+
+    }
     return (
       <div>
-        Admin
+        Hello,{user.username}
       </div>
     )
   }
