@@ -1,23 +1,107 @@
-import React, { Component } from 'react'
+import React, { Component, memo } from 'react'
 import './header.less'
 import logo from '../../assets/images/logo.png'
-export default class Header extends Component {
+import {withRouter} from 'react-router-dom'
+import menuList from '../../config/menuConfig'
+import { Modal } from 'antd';
+import memoryUtils from '../../utils/memoryUtils'
+import storageUtils from '../../utils/storageUtils'
+import { ExclamationCircleOutlined } from '@ant-design/icons';
+import LinkButton from '../../components/link-button'
+import {formateDate} from '../../utils/dateUtils'
+import {reqWhether} from '../../api/index'
+
+const { confirm } = Modal;
+
+class Header extends Component {
+  state={
+    currentTime: formateDate(Date.now()),
+    dayPictureUrl: '',
+    weather:'',
+  }
+  getTitle=()=>{
+    //得到当前请求路径
+    const path = this.props.location.pathname
+    let title
+    menuList.forEach(item=>{
+      if(item.key===path){
+
+        title= item.title
+      }else if(item.children){
+        const cItem = item.children.find(cItem=>path.indexOf(cItem.key)===0)
+        if(cItem){
+          title = cItem.title
+        }
+      }
+    })
+    return title
+
+  }
+  logout=()=>{
+    confirm({
+
+      icon: <ExclamationCircleOutlined />,
+      content: '确认退出吗',
+      onOk: ()=> {
+        storageUtils.removeUser()
+        memoryUtils.user={}
+        this.props.history.replace('/login')
+
+      },
+      onCancel() {
+        console.log('Cancel');
+      },
+    });
+
+  }
+  getTime=()=>{
+    this.intervalId = setInterval(()=>{
+      const currentTime = formateDate(Date.now())
+      this.setState({
+        currentTime
+      })
+    },1000)
+  }
+  getWeather=async()=>{
+
+    const {dayPictureUrl,weather} = await reqWhether('北京')
+ 
+    console.log("day",dayPictureUrl,weather)
+    this.setState({
+      dayPictureUrl,
+      weather
+    })
+  }
+  componentDidMount(){
+    this.getTime()
+    this.getWeather()
+  }
+  //在当前组件卸载之前调用
+  //清楚定时器
+  componentWillUnmount(){
+
+    clearInterval(this.intervalId)
+  }
   render() {
+    const {currentTime,dayPictureUrl,weather} = this.state
     return (
       <div className="header">
         <div className="header-top">
-          <span>欢迎，admin</span>
-          <a href = "javascript:">退出</a>
+       <span>欢迎，{memoryUtils.user.username}</span>
+          <LinkButton onClick={this.logout}>退出</LinkButton>
         </div>
         <div className="header-bottom">
-          <div className="header-bottom-left">首页</div>
+          <div className="header-bottom-left">{this.getTitle()}</div>
           <div className="header-bottom-right">
-            <span>2019-2-12-2</span>
-            <img src={logo} alt="whether"></img>
-            <span>晴</span>
+            <span>{currentTime}</span>
+            <img src={dayPictureUrl} alt="whether"></img>
+            <span>{weather}</span>
           </div>
         </div>
       </div>
     )
   }
 }
+
+
+export default withRouter(Header);
