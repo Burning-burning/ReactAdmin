@@ -1,12 +1,14 @@
-import React, { Component } from 'react'
+import React, { Component, memo } from 'react'
 import {Card,Table,Button,message,Modal,Form,Input,Tree} from 'antd'
 import {reqRoles,reqAddRole,reqUpdateRole} from '../../api'
 import menuList from '../../config/menuConfig'
-import memoryUtils from '../../utils/memoryUtils'
+import {connect} from 'react-redux'
+import storageUtils from '../../utils/storageUtils'
+import {logout} from '../../redux/actions'
 import {formateDate} from '../../utils/dateUtils'
 const Item = Form.Item
 const { TreeNode } = Tree;
-export default class Role extends Component {
+class Role extends Component {
   formRef = React.createRef();
   constructor(props){
     super(props)
@@ -70,12 +72,19 @@ export default class Role extends Component {
     })
     const {role} = this.state
     role.menus = this.state.checkedKeys
-    role.auth_name = memoryUtils.user.username
+    role.auth_name = this.props.user.username
     role.auth_time = Date.now()
     const result =  await reqUpdateRole(role)
     if(result.status===0){
-      message.success("更新角色权限成功")
-      this.getRoles()
+      
+      if(role._id===this.props.user.role._id){
+        this.props.logout()
+        message.error("buneng修改自己角色信息")
+      }else{
+        message.success("更新角色权限成功")
+        this.getRoles()
+      }
+      
     }else{
       message.error("更新角色权限失败")
     }
@@ -146,7 +155,7 @@ export default class Role extends Component {
           dataSource={roles}
           columns={this.columns}
           pagination={{defaultPageSize:3}}
-          rowSelection={{type:'radio',selectedRowKeys:[role._id]}}
+          rowSelection={{type:'radio',selectedRowKeys:[role._id],onSelect:(role)=>{this.setState({role})}} }
           onRow={this.onRow}
         />
         <Modal
@@ -196,3 +205,9 @@ export default class Role extends Component {
     )
   }
 }
+
+
+export default connect(
+  state=>({user: state.user}),
+  {logout}
+)(Role)

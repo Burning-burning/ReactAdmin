@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import './category.less'
-import {Card,Button,Form,Input, Table,message,Modal} from 'antd'
+import {Card,Button,Form,Input, Table,message,Modal,Select} from 'antd'
 import { PlusOutlined } from '@ant-design/icons';
 import LinkButton from '../../components/link-button'
 import {reqCategorys,reqAddCategory,reqUpdateCategory} from '../../api/index'
@@ -8,9 +8,12 @@ import { ArrowRightOutlined} from '@ant-design/icons';
 import AddForm from './add-form'
 /*
 商品分类路由
+
 */
+const {Option} =Select
 export default class Category extends Component {
   formRef = React.createRef();
+  addform=React.createRef()
   state={
     categorys: [], //一级分类列表
     subCategorys:[], //二级分类列表
@@ -50,13 +53,13 @@ export default class Category extends Component {
     })
 
   }
-  getCategorys= async()=>{
+  getCategorys= async (parentId)=>{
 
     //在发请求前，显示loading
     this.setState({
       loading: true
     })
-    const {parentId} = this.state
+    parentId = parentId||this.state.parentId
 
     const result =  await reqCategorys(parentId)
 
@@ -99,37 +102,78 @@ export default class Category extends Component {
 
   }
   addCategory = ()=>{
-    console.log("addCategory()")
-  }
-  updateCategory = async()=>{
+    this.addform.current.validateFields().then(async(values)=>{
 
-    console.log("updateCategory",this.formRef.current.getFieldsValue("xixi"))
-    this.setState({
-      showStatus: 0
+      this.setState({
+        showStatus:0
+      })
+  
+      const {parentId,categoryName} = this.addform.current.getFieldsValue()
+      this.addform.current.resetFields()
+      const result =  await reqAddCategory(categoryName,parentId)
+      if(result.status===0){
+        if(parentId===this.state.parentId){
+          this.getCategorys()
+        }else if(parentId==='0'){
+          this.getCategorys('0')
+        }}
+    }).catch(error=>{
+
     })
-    const categoryId = this.category._id
-    const categoryName = this.formRef.current.getFieldsValue("xixi")
-    console.log("categoryid",categoryId)
-    console.log("categoryName",categoryName)
-    const result = await reqUpdateCategory(categoryId,categoryName)
-    console.log(result)
-    console.log(result)
-    if(result.status===0){
-      this.getCategorys()
-    }else{
-      message.error(result.msg)
-    }
+   
+    
+   
+   
+  }
+  updateCategory = ()=>{
+    this.formRef.current.validateFields().then(async (values)=>{
+
+      this.setState({
+        showStatus: 0
+      })
+      const categoryId = this.category._id
+      const categoryName1 = this.formRef.current.getFieldsValue("categoryName")
+      const {categoryName} = categoryName1
+      console.log("categoryid",categoryId)
+      console.log("categoryName",categoryName)
+      const result = await reqUpdateCategory(categoryId,categoryName)
+      console.log(result)
+      if(result.status===0){
+        this.getCategorys()
+      }else{
+        message.error(result.msg)
+      }
+    }).catch(error=>{
+
+    })
+
+    
   }
   add=()=>{
+    console.log("parentId",this.state.parentId)
+    this.addform.current.setFieldsValue({
+      parentId: this.state.parentId
+    })
     this.setState({
       showStatus: 1
     })
   }
   update=(category)=>{
+    const {name}= category
+    console.log("categoryName",name)
+    this.formRef.current.setFieldsValue({
+      categoryName:name,
+    })
     this.category = category
     this.setState({
       showStatus: 2
     })
+  }
+  handleCancelAdd=()=>{
+    this.setState({
+      showStatus: 0
+    })
+    this.addform.current.resetFields()
   }
 
 
@@ -164,24 +208,44 @@ export default class Category extends Component {
       <Card title={title} extra={extra} >
         <Table dataSource={parentId==='0'?categorys:subCategorys} loading={loading} columns={this.columns} bordered rowKey='_id' pagination={{defaultPageSize:5,showQuickJumper:true}}/>
         <Modal
+        forceRender={true}
           title="添加分类"
           visible={showStatus===1}
           onOk={this.addCategory}
-          onCancel={this.handleCancel}
+          onCancel={this.handleCancelAdd}
         >
-          <AddForm />
+           <Form ref={this.addform}>
+        <Form.Item
+           name="parentId"
+           
+           rules={[{ required: true, message: '请输入分类名称!' }]}
+        >
+          <Select>
+            
+              <Option value="0">一级分类</Option>
+            {categorys.map(category=><Option key = {category._id} value={category._id}>{category.name}</Option>)}
+          </Select>
+        </Form.Item>
+        <Form.Item
+           name="categoryName"
+           rules={[{ required: true, message: 'Please input your username!' }]}
+        >
+          <Input placeholder="请输入分类名称"></Input>
+        </Form.Item>
+      </Form>
      
         </Modal>
         <Modal
+        forceRender={true}
           title="更新分类"
           visible={showStatus===2}
           onOk={this.updateCategory}
           onCancel={this.handleCancel}
         >
-          <Form initialValues={{xixi:category.name}} ref={this.formRef}>
+          <Form  ref={this.formRef}>
             <Form.Item
-              name="xixi"
-              rules={[{ required: true, message: 'Please input your username!' }]}
+              name="categoryName"
+              rules={[{ required: true, message: '分类名称必须输入' }]}
             >
               <Input placeholder="请输入分类名称"></Input>
         </Form.Item>

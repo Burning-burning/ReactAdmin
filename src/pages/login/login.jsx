@@ -1,10 +1,12 @@
 import React from 'react'
 import {Component} from 'react'
 import './login.less'
+import {connect} from 'react-redux'
 import logo from '../../assets/images/logo.png'
 import { Form, Input, Button } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
-import {reqLogin} from '../../api/'
+import {reqLogin} from '../../api'
+import {login} from '../../redux/actions'
 import {message} from 'antd'
 import memoryUtils from '../../utils/memoryUtils'
 import storageUtils from '../../utils/storageUtils'
@@ -16,6 +18,7 @@ class Login extends Component{
 
   onFinish = (async (values) => {
     const {username, password} = values
+    this.props.login(username, password)
     // reqLogin(username, password).then(response=>{
     //   console.log(response)
     //   console.log('成功', response.data)
@@ -23,25 +26,27 @@ class Login extends Component{
     //   console.log('失败',error)
     // })
 
-    const result = await reqLogin(username, password)
-    // console.log("请求成功",response.data)
-    if(result.status===0){
+    // const result = await reqLogin(username, password)
+    // // console.log("请求成功",response.data)
+    // if(result.status===0){
 
-      // 登陆成功
-      message.success("登陆成功")
-      // 保存user
-      const user = result.data
-      console.log("user",user)
-      memoryUtils.user = user  //保存在内存中
+    //   // 登陆成功
+    //   message.success("登陆成功")
+    //   // 保存user
+    //   const user = result.data
+    //   console.log("user",user)
+    //   memoryUtils.user = user  //保存在内存中
 
-      storageUtils.saveUser(user)  //保存在local中
+    //   storageUtils.saveUser(user)  //保存在local中
 
-      //跳转到后台管理界面(用replace是因为不希望回退，希望回退用push)
-      this.props.history.replace("/")
-    }else{
-      // 登陆失败
-      message.error(result.msg)
-    }
+    //   //跳转到后台管理界面(用replace是因为不希望回退，希望回退用push)
+    //   this.props.history.replace("/home")
+    // }else{
+    //   // 登陆失败
+    //   message.error(result.msg)
+    // }
+
+
 
   })
   /*
@@ -66,11 +71,13 @@ class Login extends Component{
   }
   render (){
     // 如果用户已经登陆，自动跳转到管理界面
-    const user = memoryUtils.user
+    //const user = memoryUtils.user
+    // const user = this.props.user
+    const user = storageUtils.getUser()
     if(user && user._id){
-      return <Redirect to='/'></Redirect>
-
+      return <Redirect to='/home'></Redirect>
     }
+
     return (
       <div className="login">
         <header className="login-header">
@@ -124,7 +131,10 @@ class Login extends Component{
 
 }
 
-export default Login
+export default connect(
+  state=>({user: state.user}),
+  {login}
+)(Login)
 
 
 /*

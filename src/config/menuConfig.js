@@ -3,6 +3,7 @@ const menuList = [
     title: '首页',
     key: '/home',
     icon: 'home',
+    isPublic:true,
   },
   {
     title: '商品',

@@ -17,7 +17,7 @@ import {message} from 'antd'
 export const reqLogin =(username,password)=>ajax('/login',{username, password}, 'POST')
 
 //添加用户
-export const reqAddUser = (user) => ajax('/manage/user/add',user, 'POST')
+export const reqAddUser = (user) => ajax('/manage/user/'+(user._id?'update':'add'),user, 'POST')
 
 
 //获取一级/二级的分类列表
@@ -85,3 +85,8 @@ export const reqAddRole =(roleName)=>ajax('/manage/role/add',{roleName},'POST')
 
 
 export const reqUpdateRole = (role)=>ajax('/manage/role/update',role,'POST')
+
+export const reqUsers=()=>ajax('/manage/user/list')
+export const reqDeleteUser = (userId)=>ajax('/manage/user/delete',{userId},'POST')
+
+

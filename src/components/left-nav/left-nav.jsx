@@ -4,6 +4,8 @@ import logo from '../../assets/images/logo.png'
 import {Link, withRouter} from 'react-router-dom'
 import menuList from '../../config/menuConfig'
 import { Menu,Icon } from 'antd';
+import {connect} from 'react-redux'
+import {setHeadTitle} from '../../redux/actions'
 import {
   AppstoreOutlined,
   MenuUnfoldOutlined,
@@ -19,6 +21,23 @@ const { SubMenu } = Menu;
 左侧导航的组件
 */
 class LeftNav extends Component {
+
+  //判断当前登陆用户对item是否有权限
+  hasAuth=(item)=>{
+    const {key, isPublic}  = item
+    const menus = this.props.user.role.menus
+
+    const username = this.props.user.username
+    if(username==='admin'||isPublic||menus.indexOf(key)!==-1){
+      return true
+    }else if(item.children){
+      return !!item.children.find(child=>menus.indexOf(child.key)!==-1)
+        
+      
+    }
+    return false
+
+  }
   //根据menu的数据数组生成对应的标签数组
   //使用map➕递归调用
   getMenuNodes_map=(menuList)=>{
@@ -46,27 +65,34 @@ class LeftNav extends Component {
   getMenuNodes=(menuList)=>{
     const path = this.props.location.pathname
     return menuList.reduce((pre, item) => {
-      if(!item.children){
-        pre.push((
-          <Menu.Item key={item.key} icon={<PieChartOutlined />}>
-          <Link to={item.key} style={{color:'white'}}>
-          {item.title}
-          </Link>
-        </Menu.Item>
-        ))
-      }else{
-        // 查找一个与当前请求路径匹配的子Item
-        const cItem = item.children.find(cItem=>path.indexOf(cItem.key)===0)
-        // 如果存在，说明当前item所对应的子列表需要展开
-        if(cItem){
-          this.openKey = item.key
-        }
-        pre.push((
-          <SubMenu key={item.key} icon={<MailOutlined />} title={item.title}>
-          {this.getMenuNodes(item.children)}
-        </SubMenu>
-        ))
 
+      if(this.hasAuth(item)){
+        if(!item.children){
+          if(item.key===path||path.indexOf(item.key)===0){
+            this.props.setHeadTitle(item.title)
+          }
+          pre.push((
+            <Menu.Item key={item.key} icon={<PieChartOutlined />} onClick={()=>this.props.setHeadTitle(item.title)}>
+            <Link to={item.key} style={{color:'white'}} >
+            {item.title}
+            </Link>
+          </Menu.Item>
+          ))
+        }else{
+          // 查找一个与当前请求路径匹配的子Item
+          const cItem = item.children.find(cItem=>path.indexOf(cItem.key)===0)
+          // 如果存在，说明当前item所对应的子列表需要展开
+          if(cItem){
+            this.openKey = item.key
+          }
+          pre.push((
+            <SubMenu key={item.key} icon={<MailOutlined />} title={item.title}>
+            {this.getMenuNodes(item.children)}
+          </SubMenu>
+          ))
+  
+        }
+        // return pre
       }
       return pre
     },[])
@@ -117,4 +143,7 @@ class LeftNav extends Component {
 }
 
 // withRouter高阶组件，包装非路由组件，返回一个新的组件，新的组件向非路由组件传递三个属性： history/location/match
-export default withRouter(LeftNav)
+export default connect(
+  state=>({user: state.user}),
+  {setHeadTitle}
+)(withRouter(LeftNav))
